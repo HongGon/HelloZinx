@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+    "errors"
 	"zinx/ziface"
 )
 
@@ -17,6 +18,18 @@ type Server struct {
 	IP string
 	// Port binded
 	Port int
+}
+
+
+// ====================== Define the handle api of current client =========================
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+    // echo service
+    fmt.Println("[Conn Handle] CallBackToClient... ")
+    if _, err := conn.Write(data[:cnt]); err != nil {
+        fmt.Println("write back buf err ", err)
+        return errors.New("CallBackToClient error")
+    }
+    return nil
 }
 
 
@@ -42,6 +55,9 @@ func (s *Server) Start() {
         }
         // succeed to monitor
         fmt.Println("start Zinx server  ", s.Name, " succ, now listenning...")
+        // TODO: server.go should have a method to automatically generate ID
+        var cid uint32
+        cid = 0
         //3 start the network business
         for {
             //3.1 block the server, create the request of connection
@@ -50,25 +66,32 @@ func (s *Server) Start() {
                 fmt.Println("Accept err ", err)
                 continue
             }
+
             //3.2 TODO Server.Start() set the max connection. if exceed the max connections, then close the new conn
             //3.3 TODO Server.Start() process the request of conn
+            dealConn := NewConnection(conn, cid, CallBackToClient)
+            cid ++
+
+            // 3.4 launch the current connection
+            go dealConn.Start()
+
             // 512 bytes echo service
-            go func () {
-                // obtain the data from client
-                for  {
-                    buf := make([]byte, 512)
-                    cnt, err := conn.Read(buf)
-                    if err != nil {
-                        fmt.Println("recv buf err ", err)
-                        continue
-                    }
-                    // echo
-                    if _, err := conn.Write(buf[:cnt]); err !=nil {
-                        fmt.Println("write back buf err ", err)
-                        continue
-                    }
-                }
-            }()
+            // go func () {
+            //     // obtain the data from client
+            //     for  {
+            //         buf := make([]byte, 512)
+            //         cnt, err := conn.Read(buf)
+            //         if err != nil {
+            //             fmt.Println("recv buf err ", err)
+            //             continue
+            //         }
+            //         // echo
+            //         if _, err := conn.Write(buf[:cnt]); err !=nil {
+            //             fmt.Println("write back buf err ", err)
+            //             continue
+            //         }
+            //     }
+            // }()
         }
     }()
 }

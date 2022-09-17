@@ -1,4 +1,6 @@
 package ziface
+
+
 // define the server interface
 type IServer interface{
 	// Start the server
@@ -8,5 +10,3 @@ type IServer interface{
 	// Server on serve
 	Serve()
 }
-
-
