@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"time"
-    "errors"
 	"zinx/ziface"
 )
 
@@ -18,19 +17,22 @@ type Server struct {
 	IP string
 	// Port binded
 	Port int
+    // echo router binded by user
+    Router ziface.IRouter
 }
 
 
-// ====================== Define the handle api of current client =========================
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-    // echo service
-    fmt.Println("[Conn Handle] CallBackToClient... ")
-    if _, err := conn.Write(data[:cnt]); err != nil {
-        fmt.Println("write back buf err ", err)
-        return errors.New("CallBackToClient error")
-    }
-    return nil
-}
+
+// // ====================== Define the handle api of current client =========================
+// func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+//     // echo service
+//     fmt.Println("[Conn Handle] CallBackToClient... ")
+//     if _, err := conn.Write(data[:cnt]); err != nil {
+//         fmt.Println("write back buf err ", err)
+//         return errors.New("CallBackToClient error")
+//     }
+//     return nil
+// }
 
 
 
@@ -69,7 +71,7 @@ func (s *Server) Start() {
 
             //3.2 TODO Server.Start() set the max connection. if exceed the max connections, then close the new conn
             //3.3 TODO Server.Start() process the request of conn
-            dealConn := NewConnection(conn, cid, CallBackToClient)
+            dealConn := NewConnection(conn, cid, s.Router)
             cid ++
 
             // 3.4 launch the current connection
@@ -109,6 +111,12 @@ func (s *Server) Serve() {
     }
 }
 
+// Router function
+func (s *Server)AddRouter(router ziface.IRouter) {
+    s.Router = router
+    fmt.Println("Add Router succ!")
+}
+
 /*
 Create a handle of server
 */
@@ -119,6 +127,7 @@ func NewServer (name string) ziface.IServer {
 		IPVersion: "tcp4",
 		IP: "0.0.0.0",
 		Port: 7777,
+        Router: nil,
 	}
 	return s
 }

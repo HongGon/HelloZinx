@@ -9,4 +9,6 @@ type IServer interface{
 	Stop()
 	// Server on serve
 	Serve()
+	// Router function
+	AddRouter(router IRouter)
 }
