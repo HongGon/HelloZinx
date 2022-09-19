@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 	"zinx/ziface"
+    "zinx/utils"
 )
 
 // realize the iServer interface, define a class of Server
@@ -40,6 +41,11 @@ type Server struct {
 
 func (s *Server) Start() {
 	fmt.Printf("[START] Server listenner at IP: %s, Port %d, is starting\n", s.IP, s.Port)
+
+    fmt.Printf("[Zinx] Version: %s, MaxConn: %d,  MaxPacketSize: %d\n",
+    utils.GlobalObject.Version,
+    utils.GlobalObject.MaxConn,
+    utils.GlobalObject.MaxPacketSize)
     
     // create a gorountine to handle the Listener business
     go func() {
@@ -122,13 +128,16 @@ Create a handle of server
 */
 
 func NewServer (name string) ziface.IServer {
-	s := &Server {
-		Name :name,
-		IPVersion: "tcp4",
-		IP: "0.0.0.0",
-		Port: 7777,
-        Router: nil,
-	}
+	// initialize the global config
+    utils.GlobalObject.Reload()
+    s := &Server {
+        Name:           utils.GlobalObject.Name,
+        IPVersion:      "tcp4",
+        IP:             utils.GlobalObject.Host,
+        Port:           utils.GlobalObject.TcpPort,
+        Router:         nil,
+    }
+    
 	return s
 }
 
