@@ -1,51 +1,29 @@
 package main
-
 import (
-	"fmt"
-	"zinx/ziface"
-	"zinx/znet"
+    "fmt"
+    "zinx/ziface"
+    "zinx/znet"
 )
-
-// ping test diy router
+//ping test define router
 type PingRouter struct {
-	znet.BaseRouter
+    znet.BaseRouter
 }
-
-// Test PreHandle
-func (this *PingRouter) PreHandle(request ziface.IRequest) {
-	fmt.Println("Call Router PreHandle")
-	_, err := request.GetConnection().GetTCPConnection().Write([]byte("before ping ... \n"))
-	if err != nil {
-		fmt.Println("call back ping ping ping error")
-	}
-}
-
-// Test Handle
+//Test Handle
 func (this *PingRouter) Handle(request ziface.IRequest) {
-	fmt.Println("Call PingRouter Handle")
-	_, err := request.GetConnection().GetTCPConnection().Write([]byte("ping...ping...ping\n"))
-	if err != nil {
-		fmt.Println("call back ping ping ping error")
-	}
+    fmt.Println("Call PingRouter Handle")
+    // read client data
+    fmt.Println("recv from client : msgId=", request.GetMsgID(), ", data=", string(request.GetData()))
+    // write data
+    err := request.GetConnection().SendMsg(1, []byte("ping...ping...ping"))
+    if err != nil {
+        fmt.Println(err)
+    }
 }
-
-// Test PostHandle
-func (this *PingRouter) PostHandle(request ziface.IRequest) {
-	fmt.Println("Call Router PostHandle")
-	_, err := request.GetConnection().GetTCPConnection().Write([]byte("After ping .......\n"))
-	if err != nil {
-		fmt.Println("call back ping ping ping error")
-	}
-}
-
-
-//  test func of Server module
 func main() {
-	// 1 Create a server handler s
-	s := znet.NewServer("[zinx v0.3]")
-	s.AddRouter(&PingRouter{})
-	// 2 Start the service
-	s.Serve()
+    // create a handler
+    s := znet.NewServer("[zinx v0.5]")
+    // config router
+    s.AddRouter(&PingRouter{})
+    // start the service
+    s.Serve()
 }
-
-

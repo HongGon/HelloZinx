@@ -16,6 +16,8 @@ type IConnection interface{
 	GetConnID() uint32
 	// obtain addr info of remote client
 	RemoteAddr() net.Addr
+	//  Send Msg
+	SendMsg(msgId uint32, data []byte) error
 	// // Server on serve
 	// Serve()
 }
