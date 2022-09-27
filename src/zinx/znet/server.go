@@ -18,8 +18,10 @@ type Server struct {
 	IP string
 	// Port binded
 	Port int
-    // echo router binded by user
-    Router ziface.IRouter
+    // current msg manage module
+    msgHandler ziface.IMsgHandle
+    // // echo router binded by user
+    // Router ziface.IRouter
 }
 
 
@@ -77,7 +79,7 @@ func (s *Server) Start() {
 
             //3.2 TODO Server.Start() set the max connection. if exceed the max connections, then close the new conn
             //3.3 TODO Server.Start() process the request of conn
-            dealConn := NewConnection(conn, cid, s.Router)
+            dealConn := NewConnection(conn, cid, s.msgHandler)
             cid ++
 
             // 3.4 launch the current connection
@@ -118,16 +120,16 @@ func (s *Server) Serve() {
 }
 
 // Router function
-func (s *Server)AddRouter(router ziface.IRouter) {
-    s.Router = router
-    fmt.Println("Add Router succ!")
+func (s *Server)AddRouter(msgId uint32, router ziface.IRouter) {
+    s.msgHandler.AddRouter(msgId, router)
+    // fmt.Println("Add Router succ!")
 }
 
 /*
 Create a handle of server
 */
 
-func NewServer (name string) ziface.IServer {
+func NewServer () ziface.IServer {
 	// initialize the global config
     utils.GlobalObject.Reload()
     s := &Server {
@@ -135,7 +137,8 @@ func NewServer (name string) ziface.IServer {
         IPVersion:      "tcp4",
         IP:             utils.GlobalObject.Host,
         Port:           utils.GlobalObject.TcpPort,
-        Router:         nil,
+        msgHandler:     NewMsgHandle(),
+        // Router:         nil,
     }
     
 	return s

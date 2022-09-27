@@ -1,21 +1,18 @@
 package main
-
 import (
-	"fmt"
-	"io"
-	"net"
-	"time"
-	"zinx/znet"
+    "fmt"
+    "io"
+    "net"
+    "time"
+    "zinx/znet"
 )
-
 /*
 	Simulate the client
 
 */
-
 func main() {
-	fmt.Println("Client Test ... start")
-	// launch the request after 3s
+    fmt.Println("Client Test ... start")
+    // launch the request after 3s
     time.Sleep(3 * time.Second)
     conn,err := net.Dial("tcp", "127.0.0.1:7777")
     if err != nil {
@@ -25,20 +22,20 @@ func main() {
     for {
         // send msg
         dp := znet.NewDataPack()
-        msg, _ := dp.Pack(znet.NewMsgPackage(0,[]byte("Zinx V0.6 Client0 Test Message")))
+        msg, _ := dp.Pack(znet.NewMsgPackage(1,[]byte("Zinx V0.6 Client1 Test Message")))
         _, err := conn.Write(msg)
         if err !=nil {
             fmt.Println("write error err ", err)
             return
         }
-        // read head
+        //  read head
         headData := make([]byte, dp.GetHeadLen())
-        _, err = io.ReadFull(conn, headData) 
+        _, err = io.ReadFull(conn, headData)
         if err != nil {
             fmt.Println("read head error")
             break
         }
-        //unpack
+        // unpack
         msgHead, err := dp.Unpack(headData)
         if err != nil {
             fmt.Println("server unpack err:", err)
@@ -59,8 +56,3 @@ func main() {
         time.Sleep(1*time.Second)
     }
 }
-
-
-
-
-

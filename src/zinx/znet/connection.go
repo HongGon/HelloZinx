@@ -20,19 +20,24 @@ type Connection struct {
 	// handleAPI ziface.HandFunc
 
 	// process method of router
-	Router ziface.IRouter
+	// Router ziface.IRouter
+
+	// msg manage module
+	MsgHandler ziface.IMsgHandle
+
 	// notice that this conn has exited
 	ExitBuffChann chan bool
 }
 
 // method to create a conn
-func NewConnection(conn *net.TCPConn, connID uint32, router ziface.IRouter) *Connection{
+func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection{
 	c := &Connection{
 		Conn:		conn,
 		ConnID:		connID,
 		isClosed:	false,
 		// handleAPI:	callback_api,
-		Router: router,
+		// Router: router,
+		MsgHandler: msgHandler,
 		ExitBuffChann: make(chan bool, 1),
 	}
 	return c
@@ -66,16 +71,18 @@ func (c *Connection) StartReader() {
 
 		if _, err := io.ReadFull(c.GetTCPConnection(), headData); err != nil {
 			fmt.Println("read msg head error ", err)
-			c.ExitBuffChann <- true
-			continue
+			// c.ExitBuffChann <- true
+			// continue
+			break
 		}
 
 		// unpack
 		msg, err := dp.Unpack(headData)
 		if err != nil {
 			fmt.Println("unpack error ", err)
-			c.ExitBuffChann <- true
-			continue
+			// c.ExitBuffChann <- true
+			// continue
+			break
 		}
 		
 		var data []byte
@@ -83,7 +90,7 @@ func (c *Connection) StartReader() {
 			data = make([]byte, msg.GetDataLen())
 			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
 				fmt.Println("read msg data error ", err )
-				c.ExitBuffChann <- true
+				// c.ExitBuffChann <- true
 				continue
 			}
 		}
@@ -95,12 +102,14 @@ func (c *Connection) StartReader() {
 			msg: msg,
 		}
 
-		go func (request ziface.IRequest) {
-			// router method to register
-			c.Router.PreHandle(request)
-			c.Router.Handle(request)
-			c.Router.PostHandle(request)
-		}(&req)
+		go c.MsgHandler.DoMsgHandler(&req)
+
+		// go func (request ziface.IRequest) {
+		// 	// router method to register
+		// 	c.Router.PreHandle(request)
+		// 	c.Router.Handle(request)
+		// 	c.Router.PostHandle(request)
+		// }(&req)
 	}
 }
 

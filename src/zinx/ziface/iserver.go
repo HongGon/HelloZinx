@@ -10,5 +10,5 @@ type IServer interface{
 	// Server on serve
 	Serve()
 	// Router function
-	AddRouter(router IRouter)
+	AddRouter(msgId uint32, router IRouter)
 }
