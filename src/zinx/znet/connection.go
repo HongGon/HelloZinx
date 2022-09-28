@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"zinx/ziface"
+	"zinx/utils"
 )
 
 type Connection struct {
@@ -27,6 +28,9 @@ type Connection struct {
 
 	// notice that this conn has exited
 	ExitBuffChann chan bool
+
+	// non-buffer channel
+	msgChan		chan []byte
 }
 
 // method to create a conn
@@ -39,9 +43,36 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 		// Router: router,
 		MsgHandler: msgHandler,
 		ExitBuffChann: make(chan bool, 1),
+		msgChan: make(chan []byte),
 	}
 	return c
 }
+
+
+/*
+	Goroutine of write msg
+*/
+
+func  (c *Connection) StartWriter() {
+	fmt.Println("[Writer Goroutine is running!]")
+	defer fmt.Println(c.RemoteAddr().String(),"[conn Writer exit!]")
+	for {
+		select{
+			case data := <-c.msgChan:
+				// data need to be send
+				if _, err := c.Conn.Write(data); err != nil {
+					fmt.Println("Send Data error:, ", err , " Conn Writer ")
+					return
+				}
+			case <- c.ExitBuffChann:
+				// conn has closed
+				return
+		}
+	}
+}
+
+
+
 
 
 // the Goroutine to process conn data
@@ -102,8 +133,14 @@ func (c *Connection) StartReader() {
 			msg: msg,
 		}
 
-		go c.MsgHandler.DoMsgHandler(&req)
+		if utils.GlobalObject.WorkerPoolSize > 0 {
+			// send msg to task queue
+			c.MsgHandler.SendMsgToTaskQueue(&req)
+		} else {
+			go c.MsgHandler.DoMsgHandler(&req)
+		}
 
+		
 		// go func (request ziface.IRequest) {
 		// 	// router method to register
 		// 	c.Router.PreHandle(request)
@@ -117,6 +154,7 @@ func (c *Connection) StartReader() {
 func (c *Connection) Start() {
 	// start to process the request after reading client data
 	go c.StartReader()
+	go c.StartWriter()
 	for {
 		select {
 		case <- c.ExitBuffChann:

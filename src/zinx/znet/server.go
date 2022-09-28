@@ -51,6 +51,8 @@ func (s *Server) Start() {
     
     // create a gorountine to handle the Listener business
     go func() {
+        // 0 launch worker pool
+        s.msgHandler.StartWorkerPool()
         // 1 obtain a tcp addr
         addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
         if err != nil {

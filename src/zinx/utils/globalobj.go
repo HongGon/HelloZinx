@@ -27,6 +27,12 @@ type GlobalObj struct {
 	MaxPacketSize uint32
 	// allowed max conn number of current server
 	MaxConn int
+	// the num of worker
+	WorkerPoolSize uint32
+	// max of task
+	MaxWorkerTaskLen uint32
+	// config file path
+	ConfFilePath string
 }
 
 /*
@@ -61,6 +67,9 @@ func init() {
 		Host:			"0.0.0.0",
 		MaxConn:		12000,
 		MaxPacketSize: 	4096,
+		ConfFilePath: "conf/zinx.json",
+		WorkerPoolSize: 10,
+		MaxWorkerTaskLen: 1024,
 	}
 	// load some user config from json
 	GlobalObject.Reload()
