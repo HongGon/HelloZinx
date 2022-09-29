@@ -13,6 +13,9 @@ import (
 */
 
 type GlobalObj struct {
+	/*
+		Server
+	*/
 	// global Server of current Zinx
 	TcpServer ziface.IServer
 	// IP of current server
@@ -21,6 +24,10 @@ type GlobalObj struct {
 	TcpPort int
 	// name
 	Name string
+
+	/*
+		Zinx
+	*/
 	// version
 	Version string
 	// max of data
@@ -31,6 +38,11 @@ type GlobalObj struct {
 	WorkerPoolSize uint32
 	// max of task
 	MaxWorkerTaskLen uint32
+	
+	MaxMsgChanLen	int
+	/*
+		config file path
+	*/
 	// config file path
 	ConfFilePath string
 }
@@ -70,6 +82,7 @@ func init() {
 		ConfFilePath: "conf/zinx.json",
 		WorkerPoolSize: 10,
 		MaxWorkerTaskLen: 1024,
+		MaxMsgChanLen: 10,
 	}
 	// load some user config from json
 	GlobalObject.Reload()

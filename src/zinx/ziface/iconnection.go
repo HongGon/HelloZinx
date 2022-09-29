@@ -18,6 +18,8 @@ type IConnection interface{
 	RemoteAddr() net.Addr
 	//  Send Msg
 	SendMsg(msgId uint32, data []byte) error
+	// send msg data to remote TCP client (buffer)
+	SendBuffMsg(msgId uint32, data []byte) error
 	// // Server on serve
 	// Serve()
 }

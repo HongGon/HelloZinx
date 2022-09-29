@@ -10,6 +10,8 @@ import (
 )
 
 type Connection struct {
+	// server of current Conn
+	TcpServer ziface.IServer
 	// Current socket TCP
 	Conn *net.TCPConn
 	// Current ID (SessionID), globally unique
@@ -31,11 +33,15 @@ type Connection struct {
 
 	// non-buffer channel
 	msgChan		chan []byte
+	
+	// buffer channel, read-write msg
+	msgBuffChan chan []byte
 }
 
 // method to create a conn
-func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection{
+func NewConnection(server ziface.IServer, conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandle) *Connection{
 	c := &Connection{
+		TcpServer: 	server,
 		Conn:		conn,
 		ConnID:		connID,
 		isClosed:	false,
@@ -44,8 +50,26 @@ func NewConnection(conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandl
 		MsgHandler: msgHandler,
 		ExitBuffChann: make(chan bool, 1),
 		msgChan: make(chan []byte),
+		msgBuffChan: make(chan []byte, utils.GlobalObject.MaxMsgChanLen),
 	}
+	// add conn to conn manager
+	c.TcpServer.GetConnMgr().Add(c)
 	return c
+}
+
+func (c *Connection) SendBuffMsg(msgId uint32, data []byte) error {
+	if c.isClosed == true {
+		return errors.New("Connection closed when send buff msg")
+	}
+	// pack data and send it
+	dp := NewDataPack()
+	msg, err := dp.Pack(NewMsgPackage(msgId, data))
+	if err != nil {
+		fmt.Println("Pack error msg id = ", msgId)
+		return errors.New("Pack error msg ")
+	}
+	c.msgBuffChan <- msg
+	return nil
 }
 
 
@@ -63,6 +87,16 @@ func  (c *Connection) StartWriter() {
 				if _, err := c.Conn.Write(data); err != nil {
 					fmt.Println("Send Data error:, ", err , " Conn Writer ")
 					return
+				}
+			case data, ok := <-c.msgBuffChan:
+				if ok {
+					if _, err := c.Conn.Write(data); err!=nil {
+						fmt.Println("Send Buff Data error:", err, " Conn Writer exit")
+						return
+					}
+				}else {
+					break
+					fmt.Println("msgBuffChan is Closed")
 				}
 			case <- c.ExitBuffChann:
 				// conn has closed
@@ -155,29 +189,38 @@ func (c *Connection) Start() {
 	// start to process the request after reading client data
 	go c.StartReader()
 	go c.StartWriter()
-	for {
-		select {
-		case <- c.ExitBuffChann:
-			// get the msg of exit, dont block
-			return
-		}
-	}
+	
+	c.TcpServer.CallOnConnStart(c)
+	// for {
+	// 	select {
+	// 	case <- c.ExitBuffChann:
+	// 		// get the msg of exit, dont block
+	// 		return
+	// 	}
+	// }
 }
 
 
 // Stop conn
 func (c *Connection) Stop() {
+	fmt.Println("Conn Stop() ... ConnID = ", c.ConnID)
 	// 1. if current conn has closed
 	if c.isClosed == true {
 		return
 	}
 	c.isClosed = true
+	
+	c.TcpServer.CallOnConnStop(c)
 	// TODO Connection Stop() if user register the business of closing the echo, then display the registion
 	// close socket conn
 	c.Conn.Close()
 	// tells the business that read data from buffer queue that this conn has closed
 	c.ExitBuffChann <- true
+
+	c.TcpServer.GetConnMgr().Remove(c)
+
 	close(c.ExitBuffChann)
+	close(c.msgBuffChan)
 }
 
 // obtain the raw socket from current conn, TCPConn

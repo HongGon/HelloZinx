@@ -20,6 +20,11 @@ type Server struct {
 	Port int
     // current msg manage module
     msgHandler ziface.IMsgHandle
+    // conn manager of current Server
+    ConnMgr ziface.IConnManager
+    // hook
+    OnConnStart func(conn ziface.IConnection)
+    OnConnStop func(conn ziface.IConnection)
     // // echo router binded by user
     // Router ziface.IRouter
 }
@@ -38,6 +43,27 @@ type Server struct {
 // }
 
 
+// Hook function
+func (s *Server)SetOnConnStart(hookFunc func(ziface.IConnection)) {
+    s.OnConnStart = hookFunc
+}
+
+func (s *Server)SetOnConnStop(hookFunc func(ziface.IConnection)) {
+    s.OnConnStop = hookFunc
+}
+
+func (s *Server)CallOnConnStart(conn ziface.IConnection) {
+    if s.OnConnStart != nil {
+        fmt.Println("---> CallOnConnStart....")
+        s.OnConnStart(conn)
+    }
+}
+func (s *Server)CallOnConnStop(conn ziface.IConnection) {
+    if s.OnConnStop != nil {
+        fmt.Println("---> CallOnConnStop....")
+        s.OnConnStop(conn)
+    }
+}
 
 // start the networks
 
@@ -80,8 +106,13 @@ func (s *Server) Start() {
             }
 
             //3.2 TODO Server.Start() set the max connection. if exceed the max connections, then close the new conn
+            if s.ConnMgr.Len() >= utils.GlobalObject.MaxConn {
+                conn.Close()
+                continue
+            }
+            
             //3.3 TODO Server.Start() process the request of conn
-            dealConn := NewConnection(conn, cid, s.msgHandler)
+            dealConn := NewConnection(s, conn, cid, s.msgHandler)
             cid ++
 
             // 3.4 launch the current connection
@@ -111,6 +142,7 @@ func (s *Server) Start() {
 func (s *Server) Stop() {
     fmt.Println("[STOP] Zinx server , name " , s.Name)
     //TODO：  Server.Stop() stop and clean other info
+    s.ConnMgr.ClearConn()
 }
 func (s *Server) Serve() {
     s.Start()
@@ -140,10 +172,17 @@ func NewServer () ziface.IServer {
         IP:             utils.GlobalObject.Host,
         Port:           utils.GlobalObject.TcpPort,
         msgHandler:     NewMsgHandle(),
+        ConnMgr:        NewConnManager(),
         // Router:         nil,
     }
     
 	return s
 }
+
+// obtain the conn manager
+func (s *Server) GetConnMgr() ziface.IConnManager {
+    return s.ConnMgr
+}
+
 
 

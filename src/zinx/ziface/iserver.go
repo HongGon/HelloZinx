@@ -11,4 +11,11 @@ type IServer interface{
 	Serve()
 	// Router function
 	AddRouter(msgId uint32, router IRouter)
+	// obtaint the conn manager
+	GetConnMgr() IConnManager
+	// hook
+	SetOnConnStart(func (IConnection))
+	SetOnConnStop(func (IConnection))
+	CallOnConnStart(conn IConnection)
+	CallOnConnStop(conn IConnection)
 }
