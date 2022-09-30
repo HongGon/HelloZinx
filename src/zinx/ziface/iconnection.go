@@ -20,6 +20,13 @@ type IConnection interface{
 	SendMsg(msgId uint32, data []byte) error
 	// send msg data to remote TCP client (buffer)
 	SendBuffMsg(msgId uint32, data []byte) error
+	// Set the property of conn
+	SetProperty(key string, value interface{})
+	// get the property of conn
+	GetProperty(key string)(interface{}, error)
+	//  remove the property of conn
+	RemoveProperty(key string)
+
 	// // Server on serve
 	// Serve()
 }
